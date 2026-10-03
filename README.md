@@ -1,172 +1,90 @@
-# CFData-Web
+# CFData-WEB（精简版：官方优选 CLI）
 
-CFData-Web 是一个基于 Go 的 Cloudflare IP 测试与筛选工具，提供本地 Web 与 CLI 两种使用方式，支持官方 IP 段扫描、非标目标测试、测速、结果筛选、导出和 GitHub 上传。
+基于 [PoemMisty/CFData-WEB](https://github.com/PoemMisty/CFData-WEB) 裁剪的轻量版，只保留适合 N1 / OpenWrt 等设备定时运行的功能：
 
-[在线演示站](https://cfdata-demo.cce.de5.net/) 仅使用浏览器内虚拟数据，用于预览界面与交互；真实使用请下载正式版本。
+**Cloudflare 官方 IP 段扫描（TCPing / HTTPing）→ 数据中心筛选 → 详细测试 → 下载测速 → 合格 IP 筛选 → 导出并上传 GitHub**
 
-![image](img/demo.png)
+已移除：Web 前端与登录、WebSocket、非标优选（nsb）、edgetunnel 上传、Android APK、更新检测。
 
-### 更新说明
+## 与原版的行为差异
 
-项目功能已趋于完善，基本达到了作者预期的效果。后续更新将以维护和新功能为主，版本迭代频率会有所降低。如果你在使用过程中有新的需求或建议，欢迎提交 Issue，作者会在评估后酌情纳入后续版本。
-
-## 功能
-
-- 官方优选：扫描 Cloudflare IPv4/IPv6，按数据中心继续详细延迟测试。
-- 非标优选：上传本地 txt/csv 或填写网络 URL，测试自定义 IP/域名与端口。
-- 测速：支持单点测速、批量测速、非标并发测速和测速阈值筛选。
-- 导出：支持 CSV/TXT、自定义字段、IP 类型筛选、合格结果筛选。
-- 上传：支持将导出结果上传到 GitHub。
-- APK：支持 Android WebView 壳运行内置后端。
+- 始终是 CLI 模式，不需要 `-cli`（旧参数 `-cli` 仍可传入，会被忽略）。
+- **只导出、只上传测速合格的 IP**（速度 ≥ `offspeedmin`）。
+- 没有合格 IP 时**不写本地文件、不上传**，程序以退出码 1 结束，GitHub 上的旧文件保持不变。
+- `offspeedlimit` 必须大于 0（精简版不再提供“仅延迟”输出）。
+- 任何失败都以非 0 退出码结束，方便 cron / 脚本判断。
 
 ## 快速开始
 
-从 [Releases](https://github.com/PoemMisty/CFData-WEB/releases/latest) 下载对应平台程序后运行。
-
-默认启动 Web 模式：
-
-```text
-服务启动于 http://localhost:13335
-当前测速网址: auto
-```
-
-浏览器打开终端中的地址即可使用。
-
-CLI 模式：
+从 Releases 下载对应平台二进制（Linux amd64 / arm64），首次运行会在二进制所在目录生成 `cfdata-config.json`：
 
 ```bash
-./cfdata-linux-amd64 -cli
+./cfdata-linux-arm64
 ```
 
-首次使用 CLI 配置文件时会生成模板并退出，编辑配置后重新运行即可。
+编辑配置后再次运行即可。仓库中的 `cfdata-config.example.json` 是定时任务场景的示例（已开启 `skipgeo`、关闭进度与颜色、开启 GitHub 上传）。
 
-简单示例：
+> `cfdata-config.json` 可能含 GitHub token，已被 `.gitignore` 忽略，请不要提交到仓库。推荐用 `ghtokenfile` 指向权限受限的 token 文件，并将 token 限制为仅能读写目标仓库。
+
+## 定时运行（OpenWrt 示例）
+
+必须开启 `skipgeo`（配置文件 `"skipgeo": true` 或命令行 `-skipgeo`），否则检测到非直连环境时程序会等待终端输入：
 
 ```bash
-# 默认 CLI：按命令行 > 配置文件 > 环境变量 > 默认值自动运行
-./cfdata-linux-amd64 -cli
-
-# 官方模式：扫描 IPv4，测试 443 端口，测速地址自动选择
-./cfdata-linux-amd64 -cli -mode official -offiptype 4 -offport 443 -offurl auto
-
-# 非标模式：读取本地文件，开启 TLS 和 5 个测速线程
-./cfdata-linux-amd64 -cli -mode nsb -nsbfile ip.txt -nsbtls=true -nsbspeedtest 5 -offurl auto
+# crontab -e：每天 4:30 运行，日志写入文件
+30 4 * * * cd /opt/cfdata && ./cfdata-linux-arm64 -skipgeo -nocolor -progress=false >> /var/log/cfdata.log 2>&1
 ```
 
-## Web 使用
+## 配置与参数
 
-界面顶部「扫描方式」选择器支持 TCPing（默认）和 HTTPing。不同扫描模式的延迟数据不可互相比较，仅同模式内的对比才有意义。
+优先级：命令行参数 > 配置文件 > 环境变量（`CFDATA_*`）> 默认值。
 
-### 扫描方式说明
+| 配置项 | 说明 | 默认 |
+| --- | --- | --- |
+| `skipgeo` | 跳过地区/代理环境验证（无人值守必须开启） | `false` |
+| `scanmode` | `tcping` 或 `httping` | `tcping` |
+| `offiptype` | IP 类型 `4` / `6` | `4` |
+| `offthreads` | 扫描并发数（小内存设备建议 50 左右） | `100` |
+| `offport` | 详细测试与测速端口 | `443` |
+| `offdelay` | 延迟阈值（毫秒） | `500` |
+| `offdc` | 指定数据中心，留空则自动选最低延迟 | 空 |
+| `offurl` | 测速地址，`auto` 为自动选择 | `auto` |
+| `offspeedlimit` | 测速达标数量上限（必须 > 0） | `5` |
+| `offspeedmin` | 测速达标下限（MB/s） | `0.1` |
+| `offout` | 本地输出文件名（仅合格 IP） | `ip.csv` |
+| `format` / `fields` / `custom` / `v6bracket` | 导出格式与字段 | `txt` / `compact` |
+| `github` / `ghrepo` / `ghbranch` / `ghpath` / `ghmessage` | GitHub 上传 | 关闭 |
+| `ghtoken` / `ghtokenfile` | token 或 token 文件（也可用环境变量 `GITHUB_TOKEN`） | 空 |
+| `ghupload` | 直接上传指定文件，不执行测试（需 `github=true`） | 空 |
+| `compactipv4` | 精简本地 IPv4 地址库（覆盖 `ips-v4.txt`） | `false` |
+| `dns` / `debug` / `nocolor` / `progress` | DNS、调试、输出控制 | 见 `-h` |
 
-- **TCPing**：测量 TCP 握手延迟，基准值。
-- **HTTPing**：测量 HTTP TTFB（Time To First Byte），延迟比 TCPing 高属正常现象。延迟阈值和渲染颜色已按倍率自动缩放，倍率仅为延迟等级参考值，非精确换算：
-  - 无 TLS（HTTP 端口）：×1.3
-  - 有 TLS（HTTPS 端口）：×4.0
-
-### 官方优选
-
-1. 选择 IPv4 或 IPv6。
-2. 设置测试端口、扫描并发、延迟阈值。
-3. 点击“开始扫描与测试”。
-4. 扫描完成后选择数据中心继续详细测试。
-5. 在详细测试结果中可单点测速或批量测速。
-
-### 非标优选
-
-1. 切换到“非标优选”。
-2. 上传 txt/csv，或填写网络 URL（二选一）。
-3. 设置备用端口、并发、TLS、结果上限、测速线程、测速阈值等参数。
-4. 点击“开始扫描与测试”。
-5. 在结果表格查看、筛选、导出或上传。
-
-非标输入推荐格式：
-
-```text
-1.2.3.4 443
-5.6.7.8 8443
-2606:4700::1111 443
-1.1.1.1
-```
-
-未提供端口时会使用备用端口；备用端口默认随 TLS 模式自动选择，关闭 TLS 为 80，开启 TLS 为 443。
-
-## 测速地址
-
-默认测速地址为 `auto`，表示由后端自动选择内置测速源。
-
-Web 下拉项：
-
-- 自动选择
-- Cloudflare
-- CM提供
-- 移动专属
-- 手动输入
-
-CLI 可通过 `-offurl`/`-nsburl` 指定：
-
-```bash
-./cfdata-linux-amd64 -cli -offurl auto
-./cfdata-linux-amd64 -cli -offurl speed.cloudflare.com/__down?bytes=99999999
-./cfdata-linux-amd64 -cli -offurl https://example.com/file.bin
-```
-
-说明：测速只读取响应字节流计算速度，不会把测速文件保存到本地。
-
-## 常用参数
-
-```text
--cli              启用 CLI 模式
--mode             official 或 nsb
--scanmode         扫描方式：tcping（默认，TCP 握手延迟）或 httping（HTTP TTFB，延迟比 tcping 高属正常，不同模式数据不可对比）
--offthreads       官方扫描并发数
--nsbthreads       非标扫描并发数
--offport          官方测试/测速端口
--offdelay         官方延迟阈值，单位毫秒
--nsbdelay         非标延迟阈值，单位毫秒
--offurl           官方测速下载地址，默认 auto
--nsburl           非标测速下载地址，默认 auto
--dns              自定义 DNS 服务器
--debug            调试日志等级：false、error、all
--offout           官方输出文件名
--nsbout           非标输出文件名
-```
-
-非标常用参数：
-
-```text
--nsbfile          本地输入文件
--nsbsourceurl     网络输入 URL
--nsbfallbackport  非标输入缺省端口；不传时随 TLS 自动使用 443/80
--nsbtls           非标是否启用 TLS
--nsbspeedtest     非标测速线程数，0 表示不测速。多 IP 并发影响实际速度，需要准确应设为 1
--nsbresultlimit   非标延迟测试结果上限
--nsbspeedmin      非标测速合格阈值，单位 MB/s
--nsbspeedlimit    非标测速合格结果上限
-```
-
-完整参数可运行：
-
-```bash
-./cfdata-linux-amd64 -h
-```
+完整参数：`./cfdata-linux-arm64 -h`
 
 ## 本地缓存
 
-Web 右上角设置菜单提供“恢复全部默认配置”，会清理本地缓存文件，例如 `ips-v4.txt`、`ips-v6.txt`、`locations.json`、ASN 数据库等。任务运行中不会直接清理，避免影响测试。
+首次运行会在当前目录下载并缓存 `ips-v4.txt`、`ips-v6.txt`、`locations.json`。需要重置时直接删除这些文件即可。
+
+## 构建
+
+Go 模块位于 `combined_refactor/`：
+
+```bash
+cd combined_refactor
+CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -trimpath -ldflags "-s -w -X main.appVersion=v1.0" -o ../cfdata-linux-arm64 .
+```
+
+GitHub Actions（`Build and Release`）会构建 Linux amd64 / arm64 并发布 Release。
 
 ## 免责声明
 
-本程序仅限用于学习与研究目的。请在下载后24小时内自行删除。使用本程序时，应自行遵守所在地区的法律法规。作者不对使用本程序所产生的任何后果承担责任。下载或使用本程序即视为已阅读、理解并同意上述声明。
+本程序仅用于学习与研究。使用本程序时，应自行遵守所在地区的法律法规，作者不对使用本程序所产生的任何后果承担责任。
 
 ## 致谢
 
-- TG 频道：[CF中转IP](https://t.me/CF_NAT)
-- GitHub：[Kwisma/iptest](https://github.com/Kwisma/iptest)
+- 上游项目：[PoemMisty/CFData-WEB](https://github.com/PoemMisty/CFData-WEB)
+- 原始思路：TG 频道 CF中转IP、[Kwisma/iptest](https://github.com/Kwisma/iptest)
 
 ## License
 
-Copyright (C) 2026 PoemMisty
-
-This project is licensed under the GNU General Public License v3.0 or later.
-See the LICENSE file for details.
+GPL v3.0 or later，详见 [LICENSE](LICENSE)。

@@ -1,0 +1,348 @@
+{
+  "_config_version": "example",
+  "config": {
+    "skipgeo": true,
+    "scanmode": "tcping",
+    "offiptype": 4,
+    "offthreads": 100,
+    "offout": "ip.csv",
+    "progress": false,
+    "nocolor": true,
+    "offurl": "auto",
+    "dns": "223.5.5.5,8.8.8.8",
+    "debug": false,
+    "compactipv4": false,
+    "offport": 443,
+    "offdelay": 500,
+    "offdc": "",
+    "offspeedlimit": 5,
+    "offspeedmin": 0.1,
+    "format": "txt",
+    "fields": "compact",
+    "custom": "",
+    "v6bracket": true,
+    "github": true,
+    "ghrepo": "owner/repo",
+    "ghbranch": "main",
+    "ghpath": "",
+    "ghmessage": "update cfdata results",
+    "ghtoken": "",
+    "ghtokenfile": "/etc/cfdata/gh_token",
+    "ghupload": ""
+  },
+  "_description": "CFData 官方优选 CLI 配置；真正配置项在 config 内。",
+  "_priority": "命令行参数 > 配置文件 > 环境变量 > 默认值",
+  "_usage": "首次生成后建议退出并编辑本文件，再重新运行。定时任务请设置 skipgeo=true。debug 支持 false、error、all、true。",
+  "_config_help": [
+    {
+      "name": "skipgeo",
+      "description": "跳过地区/代理环境验证；定时任务/无人值守必须设为 true，否则检测到非直连环境时会等待交互输入",
+      "default": "false",
+      "options": [
+        "true",
+        "false"
+      ]
+    },
+    {
+      "name": "scanmode",
+      "description": "扫描方式；tcping：仅测量 TCP 握手延迟（默认），httping：测量 HTTP TTFB 全链路延迟，延迟比 tcping 高属正常，不同模式数据不可互相比较",
+      "default": "tcping",
+      "options": [
+        "tcping",
+        "httping"
+      ]
+    },
+    {
+      "name": "offiptype",
+      "description": "IP 类型",
+      "default": "4",
+      "options": [
+        "4",
+        "6"
+      ]
+    },
+    {
+      "name": "offthreads",
+      "description": "扫描并发数；路由器/N1 内存较小建议 50 左右",
+      "default": "100"
+    },
+    {
+      "name": "offout",
+      "description": "本地输出文件名（只含测速合格 IP）",
+      "default": "ip.csv"
+    },
+    {
+      "name": "progress",
+      "description": "输出进度日志；日志重定向到文件时建议 false",
+      "default": "true",
+      "options": [
+        "true",
+        "false"
+      ]
+    },
+    {
+      "name": "nocolor",
+      "description": "禁用 ANSI 颜色输出；日志重定向到文件时建议 true",
+      "default": "false",
+      "options": [
+        "true",
+        "false"
+      ]
+    },
+    {
+      "name": "offurl",
+      "description": "测速下载地址；auto 表示由程序自动选择内置测速源",
+      "default": "auto"
+    },
+    {
+      "name": "dns",
+      "description": "自定义 DNS 服务器；默认系统 DNS 优先，失败回退内置 DNS；显式设置时强制使用指定 DNS",
+      "default": "223.5.5.5,8.8.8.8"
+    },
+    {
+      "name": "debug",
+      "description": "调试输出等级；error 记录程序错误和下载/API 异常，all 额外包含测速失败等全部明细",
+      "default": "false",
+      "options": [
+        "false",
+        "error",
+        "all",
+        "true"
+      ]
+    },
+    {
+      "name": "compactipv4",
+      "description": "精简本地 IPv4 地址库并覆盖 ips-v4.txt",
+      "default": "false",
+      "options": [
+        "true",
+        "false"
+      ]
+    },
+    {
+      "name": "offport",
+      "description": "详细测试与测速端口",
+      "default": "443"
+    },
+    {
+      "name": "offdelay",
+      "description": "延迟阈值，单位毫秒",
+      "default": "500"
+    },
+    {
+      "name": "offdc",
+      "description": "指定数据中心；留空自动选择最低延迟数据中心",
+      "default": ""
+    },
+    {
+      "name": "offspeedlimit",
+      "description": "测速达标结果上限，必须大于 0；只导出/上传达标 IP",
+      "default": "5"
+    },
+    {
+      "name": "offspeedmin",
+      "description": "测速达标下限，单位 MB/s",
+      "default": "0.1"
+    },
+    {
+      "name": "format",
+      "description": "导出/上传内容格式",
+      "default": "txt",
+      "options": [
+        "csv",
+        "txt"
+      ]
+    },
+    {
+      "name": "fields",
+      "description": "导出字段；支持 compact、all、ipport 或逗号分隔字段 key；自定义字段可写在这里排序",
+      "default": "compact",
+      "options": [
+        "compact",
+        "all",
+        "ipport",
+        "ipport,dc,loc",
+        "ipport,latency,dc,loc"
+      ]
+    },
+    {
+      "name": "custom",
+      "description": "自定义导出字段，格式 标题:内容，多项用逗号分隔；未在 fields 中排序时默认追加到最后",
+      "default": ""
+    },
+    {
+      "name": "v6bracket",
+      "description": "TXT 导出时对 IPv6 地址加方括号（[IPv6]:端口），仅对 IPv6 行生效",
+      "default": "true",
+      "options": [
+        "true",
+        "false"
+      ]
+    },
+    {
+      "name": "github",
+      "description": "导出后上传到 GitHub（仅上传测速合格 IP）",
+      "default": "false",
+      "options": [
+        "true",
+        "false"
+      ]
+    },
+    {
+      "name": "ghrepo",
+      "description": "GitHub 仓库，格式 owner/repo",
+      "default": ""
+    },
+    {
+      "name": "ghbranch",
+      "description": "GitHub 分支",
+      "default": "main"
+    },
+    {
+      "name": "ghpath",
+      "description": "GitHub 目标路径；留空时按 format 自动使用 results/ip.csv 或 results/ip.txt；文件不存在会新建，存在会覆盖",
+      "default": "自动按 format 生成"
+    },
+    {
+      "name": "ghmessage",
+      "description": "GitHub 提交信息",
+      "default": "update cfdata results"
+    },
+    {
+      "name": "ghtoken",
+      "description": "GitHub token；不推荐直接写入配置，强烈建议使用仅限制指定仓库读写权限的 token",
+      "default": ""
+    },
+    {
+      "name": "ghtokenfile",
+      "description": "GitHub token 文件路径，文件内 token 建议仅限制指定仓库读写权限",
+      "default": ""
+    },
+    {
+      "name": "ghupload",
+      "description": "快速上传指定文件到 GitHub，不执行测试；需 github=true",
+      "default": ""
+    }
+  ],
+  "_format_values": [
+    "csv",
+    "txt"
+  ],
+  "_fields_values": [
+    "compact",
+    "all",
+    "ipport",
+    "ipport,dc,loc",
+    "ipport,latency,dc,loc"
+  ],
+  "_available_fields": [
+    {
+      "Key": "ipport",
+      "Label": "ip:port"
+    },
+    {
+      "Key": "ip",
+      "Label": "IP地址"
+    },
+    {
+      "Key": "port",
+      "Label": "端口号"
+    },
+    {
+      "Key": "tls",
+      "Label": "TLS"
+    },
+    {
+      "Key": "lossRate",
+      "Label": "丢包率"
+    },
+    {
+      "Key": "latency",
+      "Label": "网络延迟"
+    },
+    {
+      "Key": "scanMode",
+      "Label": "扫描方式"
+    },
+    {
+      "Key": "speed",
+      "Label": "下载速度"
+    },
+    {
+      "Key": "outboundIP",
+      "Label": "出站IP"
+    },
+    {
+      "Key": "ipType",
+      "Label": "IP类型"
+    },
+    {
+      "Key": "originalInput",
+      "Label": "原始输入"
+    },
+    {
+      "Key": "dc",
+      "Label": "数据中心"
+    },
+    {
+      "Key": "dcCountry",
+      "Label": "落地区域"
+    },
+    {
+      "Key": "loc",
+      "Label": "源IP位置"
+    },
+    {
+      "Key": "region",
+      "Label": "地区"
+    },
+    {
+      "Key": "city",
+      "Label": "城市"
+    },
+    {
+      "Key": "asnNumber",
+      "Label": "ASN号码"
+    },
+    {
+      "Key": "asnOrg",
+      "Label": "ASN组织"
+    },
+    {
+      "Key": "visitScheme",
+      "Label": "访问协议"
+    },
+    {
+      "Key": "tlsVersion",
+      "Label": "TLS版本"
+    },
+    {
+      "Key": "sni",
+      "Label": "SNI"
+    },
+    {
+      "Key": "httpVersion",
+      "Label": "HTTP版本"
+    },
+    {
+      "Key": "warp",
+      "Label": "WARP"
+    },
+    {
+      "Key": "gateway",
+      "Label": "Gateway"
+    },
+    {
+      "Key": "rbi",
+      "Label": "RBI"
+    },
+    {
+      "Key": "kex",
+      "Label": "密钥交换"
+    },
+    {
+      "Key": "timestamp",
+      "Label": "时间戳"
+    }
+  ]
+}
